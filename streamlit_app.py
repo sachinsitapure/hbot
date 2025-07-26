@@ -1,21 +1,31 @@
 import streamlit as st
 import openai
-MEDICAL_KEYWORDS = [
-    "headache", "fever", "pain", "sick", "medicine",
-    "treatment", "diagnosis", "doctor", "symptom"
-]
 
-def is_medical_query(text):
-    text = text.lower()
-    return any(keyword in text for keyword in MEDICAL_KEYWORDS)
-    
 # Initialize OpenAI with your secret API key
 openai.api_key = st.secrets["OPENAI_API_KEY"]
 
 # Set the app title
 st.title("🩺 Health Symptom Checker")
 
-# Initialize chat history with a health-focused system prompt
+# Guardrail: keywords to detect medical relevance
+MEDICAL_KEYWORDS = [
+    "headache", "fever", "cough", "pain", "sick", "nausea", "vomit", "dizzy",
+    "symptom", "rash", "breathing", "chest", "fatigue", "infection", "cold", "flu"
+]
+
+EMERGENCY_KEYWORDS = [
+    "chest pain", "difficulty breathing", "shortness of breath", 
+    "sudden confusion", "unconscious", "faint", "stroke", "heart attack"
+]
+
+# Guardrail check functions
+def is_medical_query(text):
+    return any(keyword in text.lower() for keyword in MEDICAL_KEYWORDS)
+
+def is_emergency(text):
+    return any(phrase in text.lower() for phrase in EMERGENCY_KEYWORDS)
+
+# Initialize chat history with a system prompt
 if "messages" not in st.session_state:
     st.session_state.messages = [
         {
@@ -34,15 +44,15 @@ if "messages" not in st.session_state:
         }
     ]
 
-# Display all previous messages
-for msg in st.session_state.messages[1:]:  # Skip system prompt in UI
+# Display all previous messages (excluding system)
+for msg in st.session_state.messages[1:]:
     with st.chat_message(msg["role"]):
         st.markdown(msg["content"])
 
 # User input
 user_input = st.chat_input("Describe your symptoms...")
 
-# Function to get AI response
+# Function to get OpenAI GPT response
 def get_response(messages):
     response = openai.ChatCompletion.create(
         model="gpt-3.5-turbo",
@@ -50,40 +60,40 @@ def get_response(messages):
     )
     return response.choices[0].message["content"]
 
-# Process user input
-
-#if user_input:
-#    # Add user's message to history and show
-#    st.session_state.messages.append({"role": "user", "content": user_input})
-#    with st.chat_message("user"):
-#        st.markdown(user_input)
-
-#    # Get AI response
-#    response = get_response(st.session_state.messages)
-    
-#    # Add assistant response to history and show
-#    st.session_state.messages.append({"role": "assistant", "content": response})
-#    with st.chat_message("assistant"):
-#        st.markdown(response)
+# Handle input
 if user_input:
     st.session_state.messages.append({"role": "user", "content": user_input})
     with st.chat_message("user"):
-        st.write(user_input)
+        st.markdown(user_input)
 
-    if is_medical_query(user_input):
-        warning = ("⚠️ I'm not qualified to provide medical advice. "
-                   "Please consult a healthcare professional.\n\n"
-                   "🛑 *This chatbot does not offer medical diagnosis or treatment.*")
+    # Emergency handling
+    if is_emergency(user_input):
+        warning = (
+            "🚨 **These symptoms may indicate a medical emergency.**\n\n"
+            "Please **seek immediate medical attention** or **call emergency services.**"
+        )
         st.session_state.messages.append({"role": "assistant", "content": warning})
         with st.chat_message("assistant"):
-            st.write(warning)
-    else:
-        assistant_response = get_response(st.session_state.messages)
-        st.session_state.messages.append({"role": "assistant", "content": assistant_response})
-        with st.chat_message("assistant"):
-            st.write(assistant_response)
+            st.markdown(warning)
 
-# Optional: Add footer disclaimer
+    # Non-medical filtering
+    elif not is_medical_query(user_input):
+        note = (
+            "🧠 I'm here to help with **health-related questions and symptom checking**.\n\n"
+            "Please ask about **symptoms, conditions, or health concerns**."
+        )
+        st.session_state.messages.append({"role": "assistant", "content": note})
+        with st.chat_message("assistant"):
+            st.markdown(note)
+
+    # Valid health-related input
+    else:
+        response = get_response(st.session_state.messages)
+        st.session_state.messages.append({"role": "assistant", "content": response})
+        with st.chat_message("assistant"):
+            st.markdown(response)
+
+# Disclaimer
 st.markdown("---")
 st.markdown(
     "🛑 **Disclaimer:** This chatbot does not provide medical advice, diagnosis, or treatment. "
