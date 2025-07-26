@@ -43,19 +43,37 @@ def get_response(messages):
     return response.choices[0].message["content"]
 
 # Process user input
+
+#if user_input:
+#    # Add user's message to history and show
+#    st.session_state.messages.append({"role": "user", "content": user_input})
+#    with st.chat_message("user"):
+#        st.markdown(user_input)
+
+#    # Get AI response
+#    response = get_response(st.session_state.messages)
+    
+#    # Add assistant response to history and show
+#    st.session_state.messages.append({"role": "assistant", "content": response})
+#    with st.chat_message("assistant"):
+#        st.markdown(response)
 if user_input:
-    # Add user's message to history and show
     st.session_state.messages.append({"role": "user", "content": user_input})
     with st.chat_message("user"):
-        st.markdown(user_input)
+        st.write(user_input)
 
-    # Get AI response
-    response = get_response(st.session_state.messages)
-    
-    # Add assistant response to history and show
-    st.session_state.messages.append({"role": "assistant", "content": response})
-    with st.chat_message("assistant"):
-        st.markdown(response)
+    if is_medical_query(user_input):
+        warning = ("⚠️ I'm not qualified to provide medical advice. "
+                   "Please consult a healthcare professional.\n\n"
+                   "🛑 *This chatbot does not offer medical diagnosis or treatment.*")
+        st.session_state.messages.append({"role": "assistant", "content": warning})
+        with st.chat_message("assistant"):
+            st.write(warning)
+    else:
+        assistant_response = get_response(st.session_state.messages)
+        st.session_state.messages.append({"role": "assistant", "content": assistant_response})
+        with st.chat_message("assistant"):
+            st.write(assistant_response)
 
 # Optional: Add footer disclaimer
 st.markdown("---")
