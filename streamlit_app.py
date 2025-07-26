@@ -1,6 +1,14 @@
 import streamlit as st
 import openai
+MEDICAL_KEYWORDS = [
+    "headache", "fever", "pain", "sick", "medicine",
+    "treatment", "diagnosis", "doctor", "symptom"
+]
 
+def is_medical_query(text):
+    text = text.lower()
+    return any(keyword in text for keyword in MEDICAL_KEYWORDS)
+    
 # Initialize OpenAI with your secret API key
 openai.api_key = st.secrets["OPENAI_API_KEY"]
 
